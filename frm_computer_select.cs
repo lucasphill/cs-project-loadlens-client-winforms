@@ -1,6 +1,6 @@
 ﻿using System.Configuration;
 using System.Text.Json;
-using LoadLens.Client.DTOs;
+using LoadLens.Client.Models.DTOs;
 using LoadLens.Client.Services;
 
 namespace LoadLens.Client
@@ -22,7 +22,7 @@ namespace LoadLens.Client
 
             var token = _filesService.GetLocalFileData(ConfigurationManager.AppSettings.Get("jwtFileName")!);
             var response = await _httpService.HttpGet("/Computer/Active", token);
-            var computerList = JsonSerializer.Deserialize<List<GetComputerDTO>>(response!)!;
+            var computerList = JsonSerializer.Deserialize<List<GetComputerDTO>>(response.Data!)!;
 
             cmb_computer_list.DataSource = computerList;
             cmb_computer_list.DisplayMember = "name"; //TODO: verificar

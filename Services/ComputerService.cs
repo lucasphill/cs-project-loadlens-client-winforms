@@ -9,7 +9,7 @@ internal class ComputerService
     {
         bool result = false;
 
-        FilesService _filesService = new FilesService();
+        var _filesService = new FilesService();
         string computerId = _filesService.GetLocalFileData(ConfigurationManager.AppSettings.Get("computerIdFileName")!);
 
         if (computerId != "")
@@ -22,7 +22,7 @@ internal class ComputerService
 
     public static string SelectedPcId()
     {
-        FilesService _filesService = new FilesService();
+        var _filesService = new FilesService();
         string computerId = _filesService.GetLocalFileData(ConfigurationManager.AppSettings.Get("computerIdFileName")!);
 
         if (computerId != "")
@@ -35,19 +35,29 @@ internal class ComputerService
 
     public async static Task<string> SelectedPcName()
     {
-        HttpService _httpService = new HttpService();
-        FilesService _filesService = new FilesService();
+        var _httpService = new HttpService();
+        var _filesService = new FilesService();
 
         var token = _filesService.GetLocalFileData(ConfigurationManager.AppSettings.Get("jwtFileName")!);
         string computerId = _filesService.GetLocalFileData(ConfigurationManager.AppSettings.Get("computerIdFileName")!);
-        var response = await _httpService.HttpGet($"/Computer/id?computerId={computerId}", token);
-        var computer = JsonSerializer.Deserialize<Dictionary<string, object>>(response!)!;
+        if(computerId == null) { return "Computer Id not found"; }
 
-        if (computer.ToString() != "")
+        try
         {
-            return computer["name"].ToString();
-        }
+            var response = await _httpService.HttpGet($"/Computer/id?computerId={computerId}", token);
+            var computer = JsonSerializer.Deserialize<Dictionary<string, object>>(response.Data!)!;
 
-        return "";
+            if (computer["name"].ToString() != null && computer["name"].ToString() != "")
+            {
+                var computerName = computer["name"].ToString()!;
+                return computerName;
+            }
+
+            return "";
+        }
+        catch (Exception ex)
+        {
+            return ex.Message;
+        }
     }
 }

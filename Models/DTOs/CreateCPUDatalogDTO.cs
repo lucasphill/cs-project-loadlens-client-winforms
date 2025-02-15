@@ -1,4 +1,4 @@
-﻿namespace LoadLens.Client.DTOs;
+﻿namespace LoadLens.Client.Models.DTOs;
 
 public class CreateCPUDatalogDTO
 {

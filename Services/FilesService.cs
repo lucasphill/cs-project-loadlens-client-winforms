@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using System.ComponentModel;
+using System.Diagnostics;
+using System.Text.Json;
 
 namespace LoadLens.Client.Services;
 
@@ -57,6 +59,20 @@ internal class FilesService
         else
         {
             return false;
+        }
+    }
+
+    public void OpenFolder()
+    {
+        try
+        {
+            //Process.Start(folderPath);
+            Process.Start("explorer.exe", folderPath);
+        }
+        catch (Win32Exception win32Exception)
+        {
+            //The system cannot find the file specified...
+            Console.WriteLine(win32Exception.Message);
         }
     }
 

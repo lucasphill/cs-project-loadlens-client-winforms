@@ -4,6 +4,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace LoadLens.Client.Services;
 
@@ -13,26 +14,26 @@ internal class LoginService
     {
         string apiUrl = "/Account/Login";
 
-        HttpService _httpService = new HttpService();
-        FilesService _filesService = new FilesService();
+        var _httpService = new HttpService();
+        var _filesService = new FilesService();
 
         string jsonData = System.Text.Json.JsonSerializer.Serialize(loginData);
 
         var response = await _httpService.HttpPost(apiUrl, jsonData);
 
-        if (response == null) { return false; }
+        if (response.Data == null) { return false; }
 
-        _filesService.SaveLocalFile(response, ConfigurationManager.AppSettings.Get("jwtFileName")!);
+        _filesService.SaveLocalFile(response.Data, ConfigurationManager.AppSettings.Get("jwtFileName")!);
         return true;
     }
 
     public static bool Logout()
     {
-        FilesService _filesSerivce = new FilesService();
+        var _filesSerivce = new FilesService();
 
-        _filesSerivce.DeleteLocalFile("jwt_token.txt");
-        _filesSerivce.DeleteLocalFile("computer_id.txt");
-        if (!File.Exists("jwt_token.txt") || !File.Exists("computer_id.txt"))
+        _filesSerivce.DeleteLocalFile(ConfigurationManager.AppSettings.Get("jwtFileName")!);
+        _filesSerivce.DeleteLocalFile(ConfigurationManager.AppSettings.Get("computerIdFileName")!);
+        if (!File.Exists(ConfigurationManager.AppSettings.Get("jwtFileName")!) || !File.Exists(ConfigurationManager.AppSettings.Get("computerIdFileName")!))
         {
             return true;
         }
@@ -41,14 +42,12 @@ internal class LoginService
 
     public static bool IsLogged()
     {
-        bool result = false;
+        bool result;
 
-        FilesService _filesHelper = new FilesService();
-        string token = _filesHelper.GetLocalFileData("jwt_token.txt");
+        var _filesHelper = new FilesService();
+        string token = _filesHelper.GetLocalFileData(ConfigurationManager.AppSettings.Get("jwtFileName")!);
 
         ClaimsPrincipal? claimsPrincipal;
-        claimsPrincipal = null;
-        //var secretKey = @"V.l8J6t78Dt!gTDZn61S68i7tTs!^?eC\\)S/TE/1'-?$'J4987@#";
         var secretKey = ConfigurationManager.AppSettings.Get("ApiKey")!;
 
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -78,8 +77,8 @@ internal class LoginService
 
     public static string UserToken()
     {
-        FilesService _filesService = new FilesService();
-        string token = _filesService.GetLocalFileData("jwt_token.txt");
+        var _filesService = new FilesService();
+        string token = _filesService.GetLocalFileData(ConfigurationManager.AppSettings.Get("jwtFileName")!);
 
         if (token != "")
         {
@@ -91,16 +90,24 @@ internal class LoginService
 
     public async static Task<string> GetUsername()
     {
-        string apiUrl = "/Account/Info";
+        var apiUrl = "/Account/Info";
 
-        HttpService _httpService = new HttpService();
+        try
+        {
+            var _httpService = new HttpService();
 
-        var response = await _httpService.HttpGet(apiUrl, LoginService.UserToken());
-        var userData = JsonSerializer.Deserialize<Dictionary<string, object>>(response!)!;
+            var response = await _httpService.HttpGet(apiUrl, LoginService.UserToken());
+            if(response.Data == null) { return response.Message; }
 
-        if (userData == null) { return "Username get failed"; }
+            var userData = JsonSerializer.Deserialize<Dictionary<string, object>>(response.Data);
 
-        return userData["userName"].ToString()!;
+            var username = userData["userName"].ToString();
+
+            return username;
+        }
+        catch
+        {
+            return "Request failed";
+        }
     }
-
 }

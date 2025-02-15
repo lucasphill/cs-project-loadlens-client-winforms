@@ -1,4 +1,4 @@
-﻿namespace LoadLens.API.DTOs.DatalogDTO;
+﻿namespace LoadLens.Client.Models.DTOs;
 
 public class GetDatalogDTO
 {

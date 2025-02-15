@@ -1,4 +1,5 @@
-﻿using LoadLens.Client.Services;
+﻿using System.Threading;
+using LoadLens.Client.Services;
 
 
 namespace LoadLens.Client;
@@ -10,11 +11,14 @@ public partial class frm_index : Form
     // TODO: adicionar configurações de ambiente appsettings
 
     DatalogService _datalogService = new DatalogService();
+    private Thread _thread;
+    private volatile bool _stopThread = false;
 
     public frm_index()
     {
         InitializeComponent();
         ConfigurarSystemTray();
+
     }
 
     private void frm_index_Load(object sender, EventArgs e)
@@ -34,12 +38,22 @@ public partial class frm_index : Form
             _datalogService.Start();
         }
 
-        DataRefresh();
+        if (_thread == null || !_thread.IsAlive)
+        {
+            _stopThread = false;
+            _thread = new Thread(DataRefresh)
+            {
+                IsBackground = true
+            };
+            _thread.Start();
+        }
     }
 
     private void logoutToolStripMenuItem_Click(object sender, EventArgs e)
     {
         Hide();
+
+        _stopThread = false;
 
         _datalogService.Stop();
         LoginService.Logout();
@@ -61,7 +75,6 @@ public partial class frm_index : Form
 
         frm_computer_select frm = new frm_computer_select();
         frm.ShowDialog();
-        DataRefresh();
 
         _datalogService.Start();
     }
@@ -71,13 +84,19 @@ public partial class frm_index : Form
         Environment.Exit(0);
     }
 
-    public async void DataRefresh()
+    public void DataRefresh()
     {
-        if (LoginService.UserToken() != "" && ComputerService.SelectedPcId() != "")
+        while (_stopThread == false)
         {
-            lbl_username.Text = await LoginService.GetUsername();
-            lbl_selected_computer_id_value.Text = ComputerService.SelectedPcId();
-            lbl_selected_computer_name_value.Text = await ComputerService.SelectedPcName();
+            Invoke((MethodInvoker)async delegate
+            {
+                lbl_username.Text = await LoginService.GetUsername();
+                lbl_selected_computer_id_value.Text = ComputerService.SelectedPcId();
+                lbl_selected_computer_name_value.Text = await ComputerService.SelectedPcName();
+                lbl_last_datalog_timestamp.Text = DateTime.Now.ToString("HH:mm:ss");
+            });
+
+            Thread.Sleep(1000);
         }
     }
 
@@ -89,7 +108,7 @@ public partial class frm_index : Form
     }
 
 
-    /****************************************************************************************/
+    /********************************Minimize to system tray***********************************/
 
     private NotifyIcon notifyIcon;
     private ContextMenuStrip contextMenu;
